@@ -189,6 +189,14 @@ function App() {
             </svg>
           </button>
 
+          {/* Логотип Cogniflux */}
+          <div className="flex items-center gap-2 mr-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-violet-500/20">
+              C
+            </div>
+            <span className="text-sm font-semibold text-white hidden sm:block">Cogniflux</span>
+          </div>
+
           {/* Селекторы */}
           <div className="flex items-center gap-2 flex-1 flex-wrap">
             <ModelSelector

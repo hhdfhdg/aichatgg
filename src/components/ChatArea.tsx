@@ -24,11 +24,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({ messages, isLoading, streamingConte
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">🤖</div>
-          <h2 className="text-2xl font-bold text-white mb-2">Начните диалог</h2>
+          <div className="text-6xl mb-4">⚡</div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent mb-2">Cogniflux</h2>
           <p className="text-gray-400 text-sm leading-relaxed">
             Выберите модель и училю, затем напишите сообщение. 
-            Нейросеть готова помочь вам с любыми задачами.
+            AI готов помочь вам с любыми задачами.
           </p>
           <div className="mt-6 grid grid-cols-2 gap-3">
             <div className="p-3 bg-white/5 border border-gray-700/50 rounded-xl text-left">

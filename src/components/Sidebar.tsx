@@ -51,8 +51,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       <aside className={`fixed lg:relative z-50 h-full w-72 bg-gray-900/95 backdrop-blur-xl border-r border-gray-800/50 flex flex-col transition-transform duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        {/* Шапка */}
+        {/* Шапка с логотипом */}
         <div className="p-4 border-b border-gray-800/50">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-violet-500/20">
+              C
+            </div>
+            <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">Cogniflux</span>
+          </div>
           <Profile profile={profile} />
         </div>
 
