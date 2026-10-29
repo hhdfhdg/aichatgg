@@ -4,10 +4,40 @@
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   timestamp: number;
   model?: string;
+  // reasoning (размышление модели)
+  reasoning?: string;
+  // вызовы инструментов
+  toolCalls?: ToolCall[];
+  // результат выполнения кода
+  codeExecution?: CodeExecutionResult;
+}
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  status: 'pending' | 'running' | 'success' | 'error';
+  result?: string;
+}
+
+export interface CodeExecutionResult {
+  code: string;
+  language: string;
+  output: string;
+  error?: string;
+  status: 'running' | 'success' | 'error';
+}
+
+export interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  enabled: boolean;
 }
 
 export interface Chat {
@@ -18,6 +48,14 @@ export interface Chat {
   updatedAt: number;
   model: string;
   prompt: string;
+  // Состояние возможностей
+  capabilities: ChatCapabilities;
+}
+
+export interface ChatCapabilities {
+  reasoning: boolean;      // Размышление (thinking)
+  codeExecution: boolean;  // Выполнение кода
+  functions: boolean;      // Использование функций/инструментов
 }
 
 export interface Model {
@@ -26,6 +64,9 @@ export interface Model {
   description: string;
   maxTokens: number;
   provider: string;
+  supportsReasoning?: boolean;
+  supportsCodeExecution?: boolean;
+  supportsFunctions?: boolean;
 }
 
 export interface SystemPrompt {
@@ -56,4 +97,5 @@ export interface APIConfig {
   systemPrompt: string;
   temperature: number;
   maxTokens: number;
+  capabilities: ChatCapabilities;
 }

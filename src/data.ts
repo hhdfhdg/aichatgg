@@ -2,7 +2,7 @@
 // ДАННЫЕ - Модели, промпты, начальные данные
 // ============================================
 
-import { Model, SystemPrompt, UserProfile, Chat } from './types';
+import { Model, SystemPrompt, UserProfile, Chat, ChatCapabilities } from './types';
 
 // Доступные модели (легко расширить)
 export const models: Model[] = [
@@ -12,6 +12,9 @@ export const models: Model[] = [
     description: 'Самая мощная модель OpenAI',
     maxTokens: 8192,
     provider: 'OpenAI',
+    supportsReasoning: false,
+    supportsCodeExecution: true,
+    supportsFunctions: true,
   },
   {
     id: 'gpt-3.5-turbo',
@@ -19,6 +22,9 @@ export const models: Model[] = [
     description: 'Быстрая и экономичная модель',
     maxTokens: 4096,
     provider: 'OpenAI',
+    supportsReasoning: false,
+    supportsCodeExecution: false,
+    supportsFunctions: true,
   },
   {
     id: 'claude-3-opus',
@@ -26,6 +32,9 @@ export const models: Model[] = [
     description: 'Мощная модель от Anthropic',
     maxTokens: 4096,
     provider: 'Anthropic',
+    supportsReasoning: true,
+    supportsCodeExecution: true,
+    supportsFunctions: true,
   },
   {
     id: 'claude-3-sonnet',
@@ -33,6 +42,19 @@ export const models: Model[] = [
     description: 'Баланс скорости и качества',
     maxTokens: 4096,
     provider: 'Anthropic',
+    supportsReasoning: true,
+    supportsCodeExecution: true,
+    supportsFunctions: true,
+  },
+  {
+    id: 'o1-preview',
+    name: 'o1 Preview',
+    description: 'Модель с глубоким размышлением',
+    maxTokens: 8192,
+    provider: 'OpenAI',
+    supportsReasoning: true,
+    supportsCodeExecution: true,
+    supportsFunctions: true,
   },
   {
     id: 'llama-3-70b',
@@ -40,6 +62,9 @@ export const models: Model[] = [
     description: 'Открытая модель Meta',
     maxTokens: 8192,
     provider: 'Meta',
+    supportsReasoning: false,
+    supportsCodeExecution: false,
+    supportsFunctions: true,
   },
   {
     id: 'mistral-large',
@@ -47,6 +72,9 @@ export const models: Model[] = [
     description: 'Мощная европейская модель',
     maxTokens: 4096,
     provider: 'Mistral',
+    supportsReasoning: false,
+    supportsCodeExecution: false,
+    supportsFunctions: true,
   },
 ];
 
@@ -104,8 +132,19 @@ export const defaultProfile: UserProfile = {
   plan: 'Pro',
 };
 
+// Начальные capabilities
+export const defaultCapabilities: ChatCapabilities = {
+  reasoning: false,
+  codeExecution: false,
+  functions: false,
+};
+
 // Начальный чат
-export const createNewChat = (model: string = 'gpt-3.5-turbo', prompt: string = 'assistant'): Chat => ({
+export const createNewChat = (
+  model: string = 'gpt-3.5-turbo',
+  prompt: string = 'assistant',
+  capabilities: ChatCapabilities = defaultCapabilities
+): Chat => ({
   id: Date.now().toString(),
   title: 'Новый чат',
   messages: [],
@@ -113,4 +152,5 @@ export const createNewChat = (model: string = 'gpt-3.5-turbo', prompt: string = 
   updatedAt: Date.now(),
   model,
   prompt,
+  capabilities,
 });

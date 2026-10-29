@@ -9,9 +9,10 @@ import MessageInput from './components/MessageInput';
 import ModelSelector from './components/ModelSelector';
 import PromptSelector from './components/PromptSelector';
 import ContextIndicator from './components/ContextIndicator';
-import { sendMessage, sendMessageStream } from './api';
+import CapabilitiesToolbar from './components/CapabilitiesToolbar';
+import { sendMessageStream } from './api';
 import { models, systemPrompts, defaultProfile, createNewChat } from './data';
-import { Chat, Message, ContextInfo } from './types';
+import { Chat, Message, ContextInfo, ChatCapabilities } from './types';
 
 function App() {
   // Состояние чатов
@@ -22,38 +23,47 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [streamingReasoning, setStreamingReasoning] = useState('');
 
   // Состояние настроек
   const [selectedModel, setSelectedModel] = useState('gpt-3.5-turbo');
   const [selectedPrompt, setSelectedPrompt] = useState('assistant');
+
+  // Capabilities (тогглы)
+  const [capabilities, setCapabilities] = useState<ChatCapabilities>({
+    reasoning: false,
+    codeExecution: false,
+    functions: false,
+  });
 
   // Ref для прерывания
   const abortRef = useRef(false);
 
   // Текущий активный чат
   const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
+  const currentModel = models.find(m => m.id === selectedModel);
 
   // Подсчёт контекста
   const contextInfo: ContextInfo = {
     usedTokens: activeChat.messages.reduce((acc, m) => acc + Math.ceil(m.content.length / 4), 0),
-    maxTokens: models.find(m => m.id === selectedModel)?.maxTokens || 4096,
+    maxTokens: currentModel?.maxTokens || 4096,
     messageCount: activeChat.messages.length,
   };
 
   // Создание нового чата
   const handleNewChat = useCallback(() => {
-    const newChat = createNewChat(selectedModel, selectedPrompt);
+    const newChat = createNewChat(selectedModel, selectedPrompt, capabilities);
     setChats(prev => [newChat, ...prev]);
     setActiveChatId(newChat.id);
     setSidebarOpen(false);
-  }, [selectedModel, selectedPrompt]);
+  }, [selectedModel, selectedPrompt, capabilities]);
 
   // Удаление чата
   const handleDeleteChat = useCallback((chatId: string) => {
     setChats(prev => {
       const filtered = prev.filter(c => c.id !== chatId);
       if (filtered.length === 0) {
-        const newChat = createNewChat(selectedModel, selectedPrompt);
+        const newChat = createNewChat(selectedModel, selectedPrompt, capabilities);
         setActiveChatId(newChat.id);
         return [newChat];
       }
@@ -62,7 +72,12 @@ function App() {
       }
       return filtered;
     });
-  }, [activeChatId, selectedModel, selectedPrompt]);
+  }, [activeChatId, selectedModel, selectedPrompt, capabilities]);
+
+  // Переключение capability
+  const handleToggleCapability = useCallback((key: keyof ChatCapabilities) => {
+    setCapabilities(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   // Отправка сообщения
   const handleSend = useCallback(async (content: string) => {
@@ -80,11 +95,12 @@ function App() {
       if (chat.id !== activeChatId) return chat;
       const updatedMessages = [...chat.messages, userMessage];
       const title = chat.messages.length === 0 ? content.slice(0, 40) + (content.length > 40 ? '...' : '') : chat.title;
-      return { ...chat, messages: updatedMessages, title, updatedAt: Date.now(), model: selectedModel, prompt: selectedPrompt };
+      return { ...chat, messages: updatedMessages, title, updatedAt: Date.now(), model: selectedModel, prompt: selectedPrompt, capabilities };
     }));
 
     setIsLoading(true);
     setStreamingContent('');
+    setStreamingReasoning('');
     abortRef.current = false;
 
     try {
@@ -101,17 +117,24 @@ function App() {
         timestamp: Date.now(),
       };
 
-      // Отправляем через streaming
       let fullResponse = '';
+      let fullReasoning = '';
       
       await sendMessageStream(
         [systemMessage, ...allMessages],
-        { model: selectedModel },
+        { model: selectedModel, capabilities },
+        // onChunk - основной ответ
         (chunk) => {
           if (abortRef.current) return;
           fullResponse += chunk;
           setStreamingContent(fullResponse);
-        }
+        },
+        // onReasoning - размышление
+        (chunk) => {
+          if (abortRef.current) return;
+          fullReasoning += chunk;
+          setStreamingReasoning(fullReasoning);
+        },
       );
 
       // Добавляем ответ в чат
@@ -122,6 +145,7 @@ function App() {
           content: fullResponse,
           timestamp: Date.now(),
           model: selectedModel,
+          reasoning: fullReasoning || undefined,
         };
 
         setChats(prev => prev.map(chat => {
@@ -134,8 +158,9 @@ function App() {
     } finally {
       setIsLoading(false);
       setStreamingContent('');
+      setStreamingReasoning('');
     }
-  }, [activeChatId, chats, isLoading, selectedModel, selectedPrompt]);
+  }, [activeChatId, chats, isLoading, selectedModel, selectedPrompt, capabilities]);
 
   // Остановка генерации
   const handleStop = useCallback(() => {
@@ -178,7 +203,7 @@ function App() {
       {/* Основная область */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Верхняя панель */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800/50 bg-gray-900/50 backdrop-blur-sm">
+        <header className="flex items-center gap-2 px-4 py-3 border-b border-gray-800/50 bg-gray-900/50 backdrop-blur-sm">
           {/* Кнопка меню (мобильная) */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -190,7 +215,7 @@ function App() {
           </button>
 
           {/* Логотип Cogniflux */}
-          <div className="flex items-center gap-2 mr-2">
+          <div className="flex items-center gap-2 mr-1">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-violet-500/20">
               C
             </div>
@@ -208,6 +233,11 @@ function App() {
               prompts={systemPrompts}
               selectedPrompt={selectedPrompt}
               onSelectPrompt={handlePromptChange}
+            />
+            <CapabilitiesToolbar
+              capabilities={capabilities}
+              onToggleCapability={handleToggleCapability}
+              currentModel={currentModel}
             />
           </div>
 
@@ -227,6 +257,7 @@ function App() {
           messages={activeChat.messages}
           isLoading={isLoading}
           streamingContent={streamingContent}
+          streamingReasoning={streamingReasoning}
           userName={defaultProfile.name}
         />
 

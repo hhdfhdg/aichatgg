@@ -1,39 +1,24 @@
 // ============================================
-// КОМПОНЕНТ СООБЩЕНИЯ - Отображение одного сообщения
+// КОМПОНЕНТ СООБЩЕНИЯ - С поддержкой markdown, reasoning, tools
 // ============================================
 
 import React from 'react';
 import { Message } from '../types';
+import MarkdownRenderer from './MarkdownRenderer';
+import ReasoningBlock from './ReasoningBlock';
+import ToolCallBlock from './ToolCallBlock';
 
 interface ChatMessageProps {
   message: Message;
   userName?: string;
+  isStreaming?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName = 'Вы' }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName = 'Вы', isStreaming = false }) => {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
 
   if (isSystem) return null;
-
-  const formatContent = (content: string) => {
-    // Простая обработка markdown
-    const lines = content.split('\n');
-    return lines.map((line, i) => {
-      // Заголовки
-      if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-bold mt-3 mb-1">{line.slice(4)}</h3>;
-      if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-bold mt-3 mb-1">{line.slice(3)}</h2>;
-      if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold mt-3 mb-1">{line.slice(2)}</h1>;
-      // Код
-      if (line.startsWith('```')) return <div key={i} className="font-mono text-xs text-gray-400">{'---'}</div>;
-      // Списки
-      if (line.startsWith('- ') || line.startsWith('• ')) return <li key={i} className="ml-4 list-disc">{line.slice(2)}</li>;
-      // Пустая строка
-      if (line.trim() === '') return <br key={i} />;
-      // Обычный текст
-      return <p key={i} className="leading-relaxed">{line}</p>;
-    });
-  };
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-fadeIn`}>
@@ -47,16 +32,36 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, userName = 'Вы' })
       </div>
 
       {/* Сообщение */}
-      <div className={`max-w-[80%] ${isUser ? 'items-end' : 'items-start'}`}>
-        <div className={`px-4 py-3 rounded-2xl ${
-          isUser 
-            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-tr-sm' 
-            : 'bg-gray-800/80 border border-gray-700/50 text-gray-100 rounded-tl-sm'
-        }`}>
-          <div className="text-sm whitespace-pre-wrap">
-            {formatContent(message.content)}
+      <div className={`max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
+        {/* Reasoning (только для assistant) */}
+        {!isUser && message.reasoning && (
+          <ReasoningBlock content={message.reasoning} isStreaming={isStreaming && !message.content} />
+        )}
+
+        {/* Tool calls (только для assistant) */}
+        {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
+          <ToolCallBlock toolCalls={message.toolCalls} />
+        )}
+
+        {/* Основной контент */}
+        {message.content && (
+          <div className={`px-4 py-3 rounded-2xl ${
+            isUser 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-tr-sm' 
+              : 'bg-gray-800/80 border border-gray-700/50 text-gray-100 rounded-tl-sm'
+          }`}>
+            {isUser ? (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+            ) : (
+              <MarkdownRenderer content={message.content} />
+            )}
+            {isStreaming && isUser === false && (
+              <span className="inline-block w-1.5 h-4 bg-violet-400 animate-pulse ml-0.5 align-middle" />
+            )}
           </div>
-        </div>
+        )}
+
+        {/* Мета-информация */}
         <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? 'justify-end' : ''}`}>
           <span className="text-xs text-gray-500">
             {new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
